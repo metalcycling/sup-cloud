@@ -1,0 +1,20 @@
+# Job naming and namespace
+#
+namespace: # <required> Namespace to be used for deployments
+jobName: # <required> Name of the MPI job
+
+# Container image to be used
+#
+containerImage: # <required> Image used for creating the containers (needs to have all the applications your job may need)
+restartPolicy: # <optional, default=Never> Policy to handle container restarting failures
+
+# Runtime hardware specifications
+#
+numRanks: 1 # <optional, default=1> Total number of ranks (i.e. master + worker ranks) to be created
+numCpusPerRank: 1 # <optional, default=1> Number of CPUs for each rank
+numGpusPerRank: 0 # <optional, default=0> Number of GPUs for each rank (all GPUs per node is currently recommended for distributed training)
+totalMemoryPerRank: 1Gi # <optional, default=1Gi> Total memory for each rank
+
+# Bash commands to run from launcher
+#
+bashCommands: # <optional, default=[]> List of commands to be ran at the beginning of the execution. Use this entry to clone code, download data, change directories, and run jobs.

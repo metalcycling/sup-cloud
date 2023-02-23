@@ -1,0 +1,78 @@
+apiVersion: mcad.ibm.com/v1beta1
+kind: AppWrapper
+metadata:
+    name: {{ required "Please specify a 'jobName' in the user file" .Values.jobName }}
+    namespace: {{ required "Please specify a 'namespace' in the user file" .Values.namespace }}
+spec:
+    resources:
+        Items: []
+        GenericItems:
+            - replicas: 1
+              completionstatus: "Complete"
+              custompodresources:
+                  - replicas: {{ .Values.numRanks }}
+                    requests:
+                        cpu: {{ .Values.numCpusPerRank }}
+                        nvidia.com/gpu: {{ .Values.numGpusPerRank }}
+                        memory: {{ .Values.totalMemoryPerRank }}
+                    limits:
+                        cpu: {{ .Values.numCpusPerRank }}
+                        nvidia.com/gpu: {{ .Values.numGpusPerRank }}
+                        memory: {{ .Values.totalMemoryPerRank }}
+              generictemplate:
+                  apiVersion: kubeflow.org/v2beta1
+                  kind: MPIJob
+                  metadata:
+                      name: {{ .Values.jobName }}
+                      namespace: {{ required "Please specify a 'namespace' in the user file" .Values.namespace }}
+                      labels:
+                          appwrapper.mcad.ibm.com: {{ .Values.jobName }}
+                  spec:
+                      slotsPerWorker: 1
+                      runPolicy:
+                          cleanPodPolicy: "Running"
+                      mpiReplicaSpecs:
+                          Launcher:
+                              replicas: 1
+                              metadata:
+                                  name: {{ .Values.jobName }}
+                                  namespace: {{ required "Please specify a 'namespace' in the user file" .Values.namespace }}
+                                  labels:
+                                      appwrapper.mcad.ibm.com: {{ .Values.jobName }}
+                              template:
+                                  spec:
+                                      terminationGracePeriodSeconds: 1
+                                      initContainers:
+                                          - name: wait
+                                            image: alpine:latest
+                                            command: ["sh", "-c", "sleep 5"]
+                                      containers:
+                                          - name: mpi-launcher
+                                            image: mpioperator/tensorflow-benchmarks:latest
+                                            imagePullPolicy: IfNotPresent
+                                            command:
+                                                {{- range $command := .Values.bashCommands }}
+                                                - {{ $command }}
+                                                {{- end }}
+                          Worker:
+                              replicas: {{ .Values.numRanks }}
+                              metadata:
+                                  name: {{ .Values.jobName }}
+                                  namespace: {{ required "Please specify a 'namespace' in the user file" .Values.namespace }}
+                                  labels:
+                                      appwrapper.mcad.ibm.com: {{ .Values.jobName }}
+                              template:
+                                  spec:
+                                      terminationGracePeriodSeconds: 1
+                                      containers:
+                                          - name: mpi-worker
+                                            image: {{ required "Please specify a 'containerImage' in the user file" .Values.containerImage }}
+                                            resources:
+                                                requests:
+                                                    cpu: {{ .Values.numCpusPerRank }}
+                                                    nvidia.com/gpu: {{ .Values.numGpusPerRank }}
+                                                    memory: {{ .Values.totalMemoryPerRank }}
+                                                limits:
+                                                    cpu: {{ .Values.numCpusPerRank }}
+                                                    nvidia.com/gpu: {{ .Values.numGpusPerRank }}
+                                                    memory: {{ .Values.totalMemoryPerRank }}
