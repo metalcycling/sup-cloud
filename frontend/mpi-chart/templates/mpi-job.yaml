@@ -31,6 +31,7 @@ spec:
                       slotsPerWorker: 1
                       runPolicy:
                           cleanPodPolicy: "Running"
+                          ttlSecondsAfterFinished: 10
                       mpiReplicaSpecs:
                           Launcher:
                               replicas: 1
@@ -52,7 +53,7 @@ spec:
                                             imagePullPolicy: IfNotPresent
                                             command:
                                                 {{- range $command := .Values.bashCommands }}
-                                                - {{ $command }}
+                                                - {{ $command | quote }}
                                                 {{- end }}
                           Worker:
                               replicas: {{ .Values.numRanks }}
